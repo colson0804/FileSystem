@@ -50,7 +50,7 @@ struct ext2_group_desc * get_block_group(void * fs, __u32 block_group_num) {
     // Get the block directly after the superblock
     __u32 desc_table = (SUPERBLOCK_OFFSET / size_of_block) + 1;
     void* block_group_ptr = get_block(fs, desc_table); 
-    return (struct ext2_group_desc *) block_group_ptr; // + block_group_num
+    return (struct ext2_group_desc *) (block_group_ptr + block_group_num); // + block_group_num
 }
 
 
