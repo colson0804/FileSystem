@@ -134,14 +134,14 @@ __u32 get_inode_from_dir(void * fs, struct ext2_inode * dir, char * name) {
 
         if (node->inode != 0) {
             if ((strlen(name) == (unsigned char) (node->name_len)) && (strncmp(name, node->name, strlen(name))) == 0) {
-                target_inode = node->inode;
+                end_inode = node->inode;
             }
             node = (struct ext2_dir_entry *) (((void*) node) + node->rec_len);
         }
     }
 
-    if (target_inode != 0) {
-        return target_inode;
+    if (end_inode != 0) {
+        return end_inode;
     } 
     else {
         return 0;
