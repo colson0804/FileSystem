@@ -111,6 +111,10 @@ struct ext2_inode * get_root_dir(void * fs) {
     return get_inode(fs, EXT2_ROOT_INO);
 }
 
+// Helper function for get_inode_from_dir
+struct ext2_dir_entry* get_next_node(struct ext2_dir_entry* node) {
+    return (struct ext2_dir_entry*)(((void*)node) + node->rec_len);
+}
 
 // Given the inode for a directory and a filename, return the inode number of
 // that file inside that directory, or 0 if it doesn't exist there.
@@ -130,21 +134,30 @@ __u32 get_inode_from_dir(void * fs, struct ext2_inode * dir, char * name) {
     void* end = ((void*) node) + size_of_block;
 
     __u32 end_inode = 0;
-    while ((void*) node < end) {
+    // while ((void*) node < end) {
 
-        if (node->inode != 0) {
-            if ((strlen(name) == (unsigned char) (node->name_len)) && (strncmp(name, node->name, strlen(name))) == 0) {
-                end_inode = node->inode;
-            }
-            node = (struct ext2_dir_entry *) (((void*) node) + node->rec_len);
+    //     if (node->inode != 0) {
+    //         if ((strlen(name) == (unsigned char) (node->name_len)) && (strncmp(name, node->name, strlen(name))) == 0) {
+    //             end_inode = node->inode;
+    //         }
+    //         node = (struct ext2_dir_entry *) (((void*)node) + node->rec_len);
+    //     }
+    // }
+
+    for (; (void*) node < end; node = get_next_node(node)) {
+        if (node->inode == 0) {
+            // Something screwed up
+            return 0;
+        } else if ((strlen(name) == (unsigned char) (node->name_len)) && (strncmp(name, node->name, strlen(name))) == 0){
+            end_inode = node->inode;
         }
     }
 
-    if (end_inode != 0) {
-        return end_inode;
+    if (!end_inode) {
+        return 0;
     } 
     else {
-        return 0;
+        return end_inode;
     }
 
 }
