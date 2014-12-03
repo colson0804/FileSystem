@@ -17,27 +17,24 @@
 
 // Return a pointer to the primary superblock of a filesystem.
 struct ext2_super_block * get_super_block(void * fs) {
- //   return _ref_get_super_block(fs);
-
+    // Just give us the superblock, which is at an offset of 1024 bytes
     return (struct ext2_super_block *) (fs + SUPERBLOCK_OFFSET);
 }
 
 
 // Return the block size for a filesystem.
 __u32 get_block_size(void * fs) { 
-//    return _ref_get_block_size(fs);
-
+    // Grab the superblock, then get the block size from the data structure
     struct  ext2_super_block* super_block = get_super_block(fs);
-    //IS THIS OFFSET OR SIZE
-    return SUPERBLOCK_SIZE << super_block->s_log_block_size;
+    __u32 sblock_size = super_block->s_log_block_size;
+    return SUPERBLOCK_SIZE << sblock_size;
 }
 
 
 // Return a pointer to a block given its number.
 // get_block(fs, 0) == fs;
 void * get_block(void * fs, __u32 block_num) {
-//    return _ref_get_block(fs, block_num);
-
+    // Start position of new block is just the (number of bytes per block) * (the offset of blocks from fs)
     __u32 size_of_block = get_block_size(fs);
     __u32 total_offset = size_of_block * block_num;
     return fs + total_offset;
@@ -48,12 +45,12 @@ void * get_block(void * fs, __u32 block_num) {
 // ext2 filesystems will have several of these, but, for simplicity, we will
 // assume there is only one.
 struct ext2_group_desc * get_block_group(void * fs, __u32 block_group_num) {
-  //  return _ref_get_block_group(fs, block_group_num);
-
     __u32 size_of_block = get_block_size(fs);
-    __u32 background_block = (SUPERBLOCK_OFFSET / size_of_block) + 1;
-    void* block_group_ptr = get_block(fs, background_block); 
-    return (struct ext2_group_desc *) block_group_ptr; 
+
+    // Get the block directly after the superblock
+    __u32 desc_table = (SUPERBLOCK_OFFSET / size_of_block) + 1;
+    void* block_group_ptr = get_block(fs, desc_table); 
+    return (struct ext2_group_desc *) block_group_ptr; // + block_group_num
 }
 
 
@@ -61,12 +58,13 @@ struct ext2_group_desc * get_block_group(void * fs, __u32 block_group_num) {
 // would require finding the correct block group, but you may assume it's in the
 // first one.
 struct ext2_inode * get_inode(void * fs, __u32 inode_num) {
-   // return _ref_get_inode(fs, inode_num);
-
-    struct ext2_group_desc* background_group = get_block_group(fs, 0);
-    __u32 block_with_inode = background_group->bg_inode_table;
-    struct ext2_inode* inode = get_block(fs, block_with_inode);
-    return inode + inode_num - 1;
+    // Just grab the first block group from the descriptor table
+    struct ext2_group_desc* desc_table = get_block_group(fs, 0);
+    __u32 inode_desc_block = desc_table->bg_inode_table;
+    struct ext2_inode* inode_list = get_block(fs, inode_desc_block);
+    
+    // The Inode list is indexed by 1
+    return inode_list + (inode_num - 1);
 }
 
 
