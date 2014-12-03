@@ -17,16 +17,19 @@
 
 // Return a pointer to the primary superblock of a filesystem.
 struct ext2_super_block * get_super_block(void * fs) {
-    // Just give us the superblock, which is at an offset of 1024 bytes
+    // Just give us the superblock, which is at an offset of 1024 bytes from the
+        // start of the file system
     return (struct ext2_super_block *) (fs + SUPERBLOCK_OFFSET);
 }
 
 
 // Return the block size for a filesystem.
-__u32 get_block_size(void * fs) { 
-    // Grab the superblock, then get the block size from the data structure
+__u32 get_block_size(void * fs) {
+    // Block size stored in superblock
+    // So grab the superblock, then get the block size from its data structure
     struct  ext2_super_block* super_block = get_super_block(fs);
     __u32 sblock_size = super_block->s_log_block_size;
+    // Superblock size is not necessarily trustworthy, since it is at an offset
     return SUPERBLOCK_SIZE << sblock_size;
 }
 
@@ -63,7 +66,7 @@ struct ext2_inode * get_inode(void * fs, __u32 inode_num) {
     __u32 inode_desc_block = desc_table->bg_inode_table;
     struct ext2_inode* inode_list = get_block(fs, inode_desc_block);
     
-    // The Inode list is indexed by 1
+    // The Inode list is indexed by 1, since inode 0 doesn't exist
     return inode_list + (inode_num - 1);
 }
 
@@ -116,16 +119,17 @@ struct ext2_inode * get_root_dir(void * fs) {
 __u32 get_inode_from_dir(void * fs, struct ext2_inode * dir, char * name) {
   //   return _ref_get_inode_from_dir(fs, dir, name);
 
-    if (!(LINUX_S_ISDIR(dir->i_mode))) {
+    if (LINUX_S_ISDIR(dir->i_mode) == 0) {
         return 0;
     };
 
     __u32 size_of_block = get_block_size(fs);
-    void* block_directory = get_block(fs, dir->i_block[0]);
-    struct ext2_dir_entry* node = (struct ext2_dir_entry *) block_directory;
-    void* end = ((void *) node) + size_of_block;
 
-    __u32 target_inode = 0;
+    struct ext2_dir_entry* node = (struct ext2_dir_entry*) get_block(fs, dir->i_block[0]);
+    //struct ext2_dir_entry* node = (struct ext2_dir_entry *) block_directory;
+    void* end = ((void*) node) + size_of_block;
+
+    __u32 end_inode = 0;
     while ((void*) node < end) {
 
         if (node->inode != 0) {
