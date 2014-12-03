@@ -130,20 +130,9 @@ __u32 get_inode_from_dir(void * fs, struct ext2_inode * dir, char * name) {
     __u32 size_of_block = get_block_size(fs);
 
     struct ext2_dir_entry* node = (struct ext2_dir_entry*) get_block(fs, dir->i_block[0]);
-    //struct ext2_dir_entry* node = (struct ext2_dir_entry *) block_directory;
     void* end = ((void*) node) + size_of_block;
 
     __u32 end_inode = 0;
-    // while ((void*) node < end) {
-
-    //     if (node->inode != 0) {
-    //         if ((strlen(name) == (unsigned char) (node->name_len)) && (strncmp(name, node->name, strlen(name))) == 0) {
-    //             end_inode = node->inode;
-    //         }
-    //         node = (struct ext2_dir_entry *) (((void*)node) + node->rec_len);
-    //     }
-    // }
-
     for (; (void*) node < end; node = get_next_node(node)) {
         if (node->inode == 0) {
             // Something screwed up
@@ -153,13 +142,8 @@ __u32 get_inode_from_dir(void * fs, struct ext2_inode * dir, char * name) {
         }
     }
 
-    if (!end_inode) {
-        return 0;
-    } 
-    else {
-        return end_inode;
-    }
-
+    // if end_inode wasn't changed, it is still 0, so we didn't find it
+    return end_inode;
 }
 
 
