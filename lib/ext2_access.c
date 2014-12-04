@@ -154,13 +154,16 @@ __u32 get_inode_by_path(void * fs, char * path) {
     char ** parsed_path = split_path(path);
     __u32 ino_num = EXT2_ROOT_INO;
 
-    for (char ** part = parsed_path; *part != NULL; part++) {
+    char** path_part = parsed_path;
+
+    while(*path_part != NULL) {
         struct ext2_inode * ino = get_inode(fs, ino_num);
         if (!LINUX_S_ISDIR(ino->i_mode)) break;
-        ino_num = get_inode_from_dir(fs, ino, *part);
+        ino_num = get_inode_from_dir(fs, ino, *path_part);
         if (ino_num == 0) {
             break;
         }
+        path_part++;
     }
 
     if (ino_num == EXT2_ROOT_INO){
@@ -169,4 +172,3 @@ __u32 get_inode_by_path(void * fs, char * path) {
         return ino_num;
     }
 }
-
